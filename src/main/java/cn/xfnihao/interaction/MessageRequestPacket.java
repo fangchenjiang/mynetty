@@ -11,9 +11,16 @@ import static cn.xfnihao.protocol.Command.MESSAGE_REQUEST;
 @Data
 public class MessageRequestPacket   extends  Packet {
 
-    String msg;
+    private String toUserId;
+    private String message;
+
+    public MessageRequestPacket(String toUserId, String message) {
+        this.toUserId = toUserId;
+        this.message = message;
+    }
+
     @Override
     public Byte getCommand() {
-        return  MESSAGE_REQUEST;
+        return MESSAGE_REQUEST;
     }
 }

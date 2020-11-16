@@ -10,9 +10,9 @@ import static cn.xfnihao.protocol.Command.LOGIN_REQUEST;
  */
 @Data
 public class LoginRequestPacket extends  Packet {
-    private String userId;
+    private String userName;
 
-    private String username;
+    private  String userId;
 
     private String password;
 

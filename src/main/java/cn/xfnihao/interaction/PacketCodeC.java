@@ -15,39 +15,47 @@ import static cn.xfnihao.protocol.Command.*;
  * @Date 2020/11/9
  */
 public class PacketCodeC {
-    private static final int MAGIC_NUMBER = 0x12345678;
 
-    public  static final PacketCodeC INSTANCE=new PacketCodeC(); //单例
-    private static final Map<Byte, Class<? extends Packet>> packetTypeMap;
-    private static final Map<Byte, Serializer> serializerMap;
+    public static final int MAGIC_NUMBER = 0x12345678;
+    public static final PacketCodeC INSTANCE = new PacketCodeC();
 
-    static {
+    private final Map<Byte, Class<? extends Packet>> packetTypeMap;
+    private final Map<Byte, Serializer> serializerMap;
+
+
+    private PacketCodeC() {
         packetTypeMap = new HashMap<>();
         packetTypeMap.put(LOGIN_REQUEST, LoginRequestPacket.class);
         packetTypeMap.put(LOGIN_RESPONSE, LoginResponsePacket.class);
-        packetTypeMap.put(MESSAGE_REQUEST,MessageRequestPacket.class);
-        packetTypeMap.put(MESSAGE_RESPONSE,MessageResponsePacket.class);
+        packetTypeMap.put(MESSAGE_REQUEST, MessageRequestPacket.class);
+        packetTypeMap.put(MESSAGE_RESPONSE, MessageResponsePacket.class);
+        packetTypeMap.put(LOGOUT_REQUEST, LogoutRequestPacket.class);
+        packetTypeMap.put(LOGOUT_RESPONSE, LogoutResponsePacket.class);
+        packetTypeMap.put(CREATE_GROUP_REQUEST, CreateGroupRequestPacket.class);
+        packetTypeMap.put(CREATE_GROUP_RESPONSE, CreateGroupResponsePacket.class);
+
+        packetTypeMap.put(JOIN_GROUP_REQUEST,JoinGroupRequestPacket.class);
+        packetTypeMap.put(JOIN_GROUP_RESPONSE,JoinGroupResponsePacket.class);
+
+        packetTypeMap.put(LIST_GROUP_MEMBERS_REQUEST,ListGroupMembersRequestPacket.class);
+        packetTypeMap.put(LIST_GROUP_MEMBERS_RESPONSE,ListGroupMembersResponsePacket.class);
 
         serializerMap = new HashMap<>();
         Serializer serializer = new JSONSerializer();
         serializerMap.put(serializer.getSerializerAlgorithm(), serializer);
     }
 
-    public ByteBuf encode(ByteBuf byteBuf, Packet packet) {
-//        // 1. 创建 ByteBuf 对象
-//        ByteBuf byteBuf = byteBufAllocator.DEFAULT.ioBuffer();
-        // 2. 序列化 Java 对象
+    public void encode(ByteBuf byteBuf, Packet packet) {
+        // 1. 序列化 java 对象
         byte[] bytes = Serializer.DEFAULT.serialize(packet);
 
-        // 3. 实际编码过程
+        // 2. 实际编码过程
         byteBuf.writeInt(MAGIC_NUMBER);
         byteBuf.writeByte(packet.getVersion());
         byteBuf.writeByte(Serializer.DEFAULT.getSerializerAlgorithm());
         byteBuf.writeByte(packet.getCommand());
         byteBuf.writeInt(bytes.length);
         byteBuf.writeBytes(bytes);
-
-        return byteBuf;
     }
 
 
@@ -58,7 +66,7 @@ public class PacketCodeC {
         // 跳过版本号
         byteBuf.skipBytes(1);
 
-        // 序列化算法标识
+        // 序列化算法
         byte serializeAlgorithm = byteBuf.readByte();
 
         // 指令

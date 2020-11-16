@@ -1,20 +1,19 @@
 package cn.xfnihao.client;
 
-import cn.xfnihao.client.handler.LoginResponseHandler;
-import cn.xfnihao.client.handler.MessageResponseHandler;
-import cn.xfnihao.interaction.MessageRequestPacket;
-import cn.xfnihao.interaction.PacketCodeC;
+import cn.xfnihao.client.handler.*;
+import cn.xfnihao.command.LoginConsoleCommand;
 import cn.xfnihao.protocol.PacketDecoder;
 import cn.xfnihao.protocol.PacketEncoder;
-import cn.xfnihao.util.LoginUtil;
+import cn.xfnihao.protocol.Spliter;
+import cn.xfnihao.service.ConsoleCommandManager;
+import cn.xfnihao.util.SessionUtil;
 import io.netty.bootstrap.Bootstrap;
-import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.handler.codec.string.StringEncoder;
+import io.netty.handler.codec.string.StringDecoder;
 
 
 import java.util.Scanner;
@@ -24,6 +23,8 @@ import java.util.Scanner;
  * @Date 2020/11/7
  */
 public class NettyClient {
+    public    static  final  String IP="127.0.0.1";
+    public    static  final  Integer PORT=8000;
     public static void main(String[] args) throws InterruptedException {
         Bootstrap bootstrap = new Bootstrap();
         NioEventLoopGroup group = new NioEventLoopGroup();
@@ -33,13 +34,26 @@ public class NettyClient {
                 .handler(new ChannelInitializer<Channel>() {
                     @Override
                     protected void initChannel(Channel ch) {
+                        ch.pipeline().addLast(new Spliter());
                         ch.pipeline().addLast(new PacketDecoder());
+                        // 登录响应处理器
                         ch.pipeline().addLast(new LoginResponseHandler());
+                        // 收消息处理器
                         ch.pipeline().addLast(new MessageResponseHandler());
+                        // 创建群响应处理器
+                        ch.pipeline().addLast(new CreateGroupResponseHandler());
+                        // 加群响应处理器
+                        ch.pipeline().addLast(new JoinGroupResponseHandler());
+                        // 退群响应处理器
+                        ch.pipeline().addLast(new QuitGroupResponseHandler());
+                        // 获取群成员响应处理器
+                        ch.pipeline().addLast(new ListGroupMembersResponseHandler());
+                        // 登出响应处理器
+                        ch.pipeline().addLast(new LogoutResponseHandler());
                         ch.pipeline().addLast(new PacketEncoder());
                     }
                 });
-        connect(bootstrap,"127.0.0.1",8000);
+        connect(bootstrap,IP,PORT);
     }
     private static void connect(Bootstrap bootstrap, String host, int port) {
         bootstrap.connect(host, port).addListener(future -> {
@@ -53,25 +67,18 @@ public class NettyClient {
             }
         });
     }
-    private static void startConsoleThread(Channel channel){
+
+    private static void startConsoleThread(Channel channel) {
+        ConsoleCommandManager consoleCommandManager = new ConsoleCommandManager();
+        LoginConsoleCommand loginConsoleCommand = new LoginConsoleCommand();
+        Scanner scanner = new Scanner(System.in);
 
         new Thread(() -> {
             while (!Thread.interrupted()) {
-                if (LoginUtil.hasLogin(channel)) {
-                    System.out.println("输入发送到服务端的信息:");
-                    Scanner sc = new Scanner(System.in);
-                    String line = sc.nextLine();
-
-                    MessageRequestPacket packet = new MessageRequestPacket();
-                    packet.setMsg(line);
-                    channel.writeAndFlush(packet);
-                    try {
-                        Thread.sleep(1000);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-
-
+                if (!SessionUtil.hasLogin(channel)) {
+                    loginConsoleCommand.exec(scanner, channel);
+                } else {
+                    consoleCommandManager.exec(scanner, channel);
                 }
             }
         }).start();

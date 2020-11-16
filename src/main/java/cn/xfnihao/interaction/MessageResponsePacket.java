@@ -11,10 +11,15 @@ import static cn.xfnihao.protocol.Command.MESSAGE_RESPONSE;
 @Data
 public class MessageResponsePacket  extends  Packet {
 
-    String msg;
+    private String fromUserId;
+
+    private String fromUserName;
+
+    private String message;
 
     @Override
     public Byte getCommand() {
-        return  MESSAGE_RESPONSE;
+
+        return MESSAGE_RESPONSE;
     }
 }
